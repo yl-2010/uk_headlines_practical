@@ -4,9 +4,7 @@ Domain adaptation for topic classification: DistilBERT trained on AG News titles
 
 ## Live results (GitHub Pages)
 
-After enabling Pages on this repo (**Settings → Pages → Deploy from branch `main` / root**), the site will be at:
-
-`https://yl-2010.github.io/uk_headlines_practical/`
+**Site:** [https://yl-2010.github.io/uk_headlines_practical/](https://yl-2010.github.io/uk_headlines_practical/)
 
 | Page | File |
 |------|------|
