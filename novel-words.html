@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UK Headlines Classifier — Novel Words</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --ink: #14201c;
+      --muted: #5a6b63;
+      --paper: #f3f6f2;
+      --panel: rgba(255, 255, 255, 0.72);
+      --line: rgba(20, 32, 28, 0.12);
+      --teal: #0f766e;
+      --amber: #c2410c;
+      --slate: #64748b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "DM Sans", sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(20, 184, 166, 0.18), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(194, 65, 12, 0.12), transparent 50%),
+        linear-gradient(180deg, #e8efe9 0%, var(--paper) 40%, #eef3ef 100%);
+      line-height: 1.5;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      z-index: 0;
+    }
+
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem 0.5rem;
+      padding: 0.7rem 1.25rem;
+      background: rgba(243, 246, 242, 0.88);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    .site-nav .brand {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 1.05rem;
+      color: var(--ink);
+      text-decoration: none;
+      margin-right: 0.75rem;
+    }
+
+    .site-nav .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .site-nav a.nav-link {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .site-nav a.nav-link:hover {
+      color: var(--ink);
+      background: rgba(15, 118, 110, 0.08);
+    }
+
+    .site-nav a.nav-link.active {
+      color: var(--teal);
+      background: rgba(15, 118, 110, 0.12);
+      border-color: rgba(15, 118, 110, 0.22);
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 0.6rem;
+      opacity: 0;
+      animation: rise 0.7s ease forwards;
+    }
+
+    h1 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      line-height: 1.05;
+      margin: 0 0 0.75rem;
+      letter-spacing: -0.02em;
+      opacity: 0;
+      animation: rise 0.7s ease 0.08s forwards;
+    }
+
+    .lead {
+      max-width: 42rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin: 0 0 1.75rem;
+      opacity: 0;
+      animation: rise 0.7s ease 0.16s forwards;
+    }
+
+    .deltas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      margin-bottom: 2.25rem;
+      opacity: 0;
+      animation: rise 0.7s ease 0.24s forwards;
+    }
+
+    .delta {
+      font-size: 0.95rem;
+      color: var(--ink);
+    }
+
+    .delta strong {
+      color: var(--teal);
+      font-weight: 700;
+    }
+
+    section {
+      margin: 2.5rem 0;
+      opacity: 0;
+      animation: rise 0.75s ease forwards;
+    }
+
+    section:nth-of-type(1) { animation-delay: 0.3s; }
+    section:nth-of-type(2) { animation-delay: 0.38s; }
+    section:nth-of-type(3) { animation-delay: 0.46s; }
+    section:nth-of-type(4) { animation-delay: 0.54s; }
+    section:nth-of-type(5) { animation-delay: 0.62s; }
+    section:nth-of-type(6) { animation-delay: 0.7s; }
+
+    h2 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: 1.75rem;
+      margin: 0 0 0.35rem;
+    }
+
+    .section-note {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin: 0 0 1.1rem;
+    }
+
+    .chart-shell {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1rem 1rem 0.5rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 18px 40px rgba(20, 32, 28, 0.06);
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: min(320px, 52vw);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 820px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.7rem 0.55rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .callout {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--amber);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 1rem;
+    }
+
+    .callout strong { color: var(--ink); }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .chips li {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--ink);
+      background: rgba(15, 118, 110, 0.1);
+      border: 1px solid rgba(15, 118, 110, 0.18);
+      border-radius: 999px;
+      padding: 0.28rem 0.7rem;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    footer a { color: var(--teal); }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="Site">
+    <a class="brand" href="index.html">UK Headlines</a>
+    <div class="links">
+      <a class="nav-link" href="index.html">Classification</a>
+      <a class="nav-link" href="similarity.html">Embeddings</a>
+      <a class="nav-link" href="lengths.html">Lengths</a>
+      <a class="nav-link active" href="novel-words.html" aria-current="page">Novel words</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="eyebrow">Cambridge 2026 · UK headlines · vocabulary</div>
+    <h1>Novel words in UK test</h1>
+    <p class="lead">
+      How many UK-test words never appear in UK training — and how many never
+      appear in AG training? Reported as both types (unique words) and tokens
+      (occurrences). Out-of-vocabulary tokens are one concrete form of domain / split shift.
+    </p>
+    <div class="deltas">
+      <div class="delta">vs UK train: <strong>602</strong> types · <strong>739</strong> tokens (17.7%)</div>
+      <div class="delta">vs AG train: <strong>200</strong> types · <strong>255</strong> tokens (6.1%)</div>
+      <div class="delta">UK test: <strong>1,788</strong> types · <strong>4,165</strong> tokens</div>
+    </div>
+
+    <section>
+      <h2>Headline counts</h2>
+      <p class="section-note">
+        A token is <em>novel</em> if that surface form never appears in the comparison
+        training corpus. <strong>Types</strong> = unique novel words;
+        <strong>tokens</strong> = how often those novel words occur in UK test.
+        Tokenization: lowercase whitespace split (same as the Lengths page).
+      </p>
+      <div class="chart-shell" style="padding: 0.5rem 1rem 0.25rem;">
+        <table>
+          <thead>
+            <tr>
+              <th>Comparison</th>
+              <th class="num">Novel types</th>
+              <th class="num">% of types</th>
+              <th class="num">Novel tokens</th>
+              <th class="num">% of tokens</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>UK test − UK train</td>
+              <td class="num">602</td>
+              <td class="num">33.7%</td>
+              <td class="num">739</td>
+              <td class="num">17.7%</td>
+            </tr>
+            <tr>
+              <td>UK test − AG train</td>
+              <td class="num">200</td>
+              <td class="num">11.2%</td>
+              <td class="num">255</td>
+              <td class="num">6.1%</td>
+            </tr>
+            <tr>
+              <td>UK test − both trains</td>
+              <td class="num">160</td>
+              <td class="num">8.9%</td>
+              <td class="num">191</td>
+              <td class="num">4.6%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <strong>Why AG covers more UK test words than UK train does:</strong>
+        AG train is much larger (28,500 headlines, 38,838 word types) than UK train
+        (1,216 headlines, 4,656 types), so many everyday English tokens in BBC test
+        already appear in AG — even when UK-specific names and politics terms do not.
+        Token rates are lower than type rates because novel words are often rare.
+      </div>
+    </section>
+
+    <section>
+      <h2>By label</h2>
+      <p class="section-note">
+        Same novelty definition, sliced by UK test label. Each row uses only that
+        label’s UK test headlines, still compared against the <em>full</em> UK / AG
+        training vocabulary. Both types and tokens are shown.
+      </p>
+      <div class="chart-shell" style="padding: 0.5rem 1rem 0.25rem; margin-bottom: 1rem; overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th class="num">n</th>
+              <th class="num">Tokens</th>
+              <th class="num">Types vs UK</th>
+              <th class="num">Tokens vs UK</th>
+              <th class="num">% tokens</th>
+              <th class="num">Types vs AG</th>
+              <th class="num">Tokens vs AG</th>
+              <th class="num">% tokens</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>business</td>
+              <td class="num">76</td>
+              <td class="num">1,215</td>
+              <td class="num">178</td>
+              <td class="num">218</td>
+              <td class="num">17.9%</td>
+              <td class="num">58</td>
+              <td class="num">68</td>
+              <td class="num">5.6%</td>
+            </tr>
+            <tr>
+              <td>sport</td>
+              <td class="num">75</td>
+              <td class="num">1,195</td>
+              <td class="num">185</td>
+              <td class="num">224</td>
+              <td class="num">18.7%</td>
+              <td class="num">74</td>
+              <td class="num">97</td>
+              <td class="num">8.1%</td>
+            </tr>
+            <tr>
+              <td>tech</td>
+              <td class="num">50</td>
+              <td class="num">796</td>
+              <td class="num">137</td>
+              <td class="num">151</td>
+              <td class="num">19.0%</td>
+              <td class="num">22</td>
+              <td class="num">23</td>
+              <td class="num">2.9%</td>
+            </tr>
+            <tr>
+              <td>politics</td>
+              <td class="num">60</td>
+              <td class="num">959</td>
+              <td class="num">120</td>
+              <td class="num">146</td>
+              <td class="num">15.2%</td>
+              <td class="num">47</td>
+              <td class="num">67</td>
+              <td class="num">7.0%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid-2">
+        <div class="chart-shell">
+          <div class="chart-wrap">
+            <canvas id="byLabelTypesChart" aria-label="Grouped bars of novel word types by label"></canvas>
+          </div>
+        </div>
+        <div class="chart-shell">
+          <div class="chart-wrap">
+            <canvas id="byLabelTokensChart" aria-label="Grouped bars of novel token counts by label"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="callout">
+        <strong>Sport is the most AG-novel; tech the least — in tokens too.</strong>
+        Sport has 97 novel-vs-AG tokens (8.1% of its tokens); tech only 23 (2.9%).
+        Type rates look higher because many novel words appear only once.
+      </div>
+    </section>
+
+    <section>
+      <h2>Examples by label (novel vs AG)</h2>
+      <p class="section-note">
+        Frequent alphabetic UK-test words for each label that never appear in AG train.
+      </p>
+      <div class="grid-2">
+        <div class="chart-shell" style="padding: 1rem 1.1rem 1.15rem;">
+          <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">business</h2>
+          <ul class="chips">
+            <li>deccan</li>
+            <li>eurodisney</li>
+            <li>rupee</li>
+            <li>sell-offs</li>
+            <li>botin</li>
+            <li>daiwa</li>
+          </ul>
+        </div>
+        <div class="chart-shell" style="padding: 1rem 1.1rem 1.15rem;">
+          <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">sport</h2>
+          <ul class="chips">
+            <li>mirza</li>
+            <li>sania</li>
+            <li>fly-half</li>
+            <li>gallas</li>
+            <li>hodgson</li>
+            <li>extra-time</li>
+          </ul>
+        </div>
+        <div class="chart-shell" style="padding: 1rem 1.1rem 1.15rem;">
+          <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">tech</h2>
+          <ul class="chips">
+            <li>posters</li>
+            <li>adaptor</li>
+            <li>anti-tremor</li>
+            <li>reboot</li>
+            <li>funkier</li>
+            <li>kyrgyz</li>
+          </ul>
+        </div>
+        <div class="chart-shell" style="padding: 1rem 1.1rem 1.15rem;">
+          <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">politics</h2>
+          <ul class="chips">
+            <li>tory</li>
+            <li>ukip</li>
+            <li>eurosceptic</li>
+            <li>auschwitz</li>
+            <li>jowell</li>
+            <li>rebate</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Vocabulary sizes</h2>
+      <p class="section-note">Unique lowercase whitespace tokens per split.</p>
+      <div class="grid-2">
+        <div class="chart-shell">
+          <div class="chart-wrap">
+            <canvas id="vocabChart" aria-label="Bar chart of vocabulary sizes"></canvas>
+          </div>
+        </div>
+        <div class="chart-shell" style="padding: 0.5rem 1rem 0.25rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Split</th>
+                <th class="num">Headlines</th>
+                <th class="num">Vocab size</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>UK train</td>
+                <td class="num">1,216</td>
+                <td class="num">4,656</td>
+              </tr>
+              <tr>
+                <td>UK test</td>
+                <td class="num">261</td>
+                <td class="num">1,788</td>
+              </tr>
+              <tr>
+                <td>AG train</td>
+                <td class="num">28,500</td>
+                <td class="num">38,838</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="section-note" style="margin: 0.85rem 0 0.5rem;">
+            Shared with UK test: UK train covers <strong>1,186</strong> types;
+            AG train covers <strong>1,588</strong>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Overall novel types vs tokens</h2>
+      <p class="section-note">
+        UK-test words missing from each training set — unique types and total token occurrences.
+      </p>
+      <div class="chart-shell">
+        <div class="chart-wrap">
+          <canvas id="novelChart" aria-label="Grouped bars of novel types and tokens"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Example novel words</h2>
+      <p class="section-note">
+        Frequent alphabetic examples from UK test (punctuation-heavy tokens omitted).
+        Full lists live in <code>artifacts/novel_words_summary.json</code>.
+      </p>
+      <div class="grid-2">
+        <div class="chart-shell" style="padding: 1rem 1.1rem 1.15rem;">
+          <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Novel vs UK train</h2>
+          <ul class="chips">
+            <li>ford</li>
+            <li>allegedly</li>
+            <li>embracing</li>
+            <li>expects</li>
+            <li>half-life</li>
+            <li>henry</li>
+            <li>posters</li>
+            <li>absa</li>
+            <li>ajax</li>
+            <li>arnesen</li>
+          </ul>
+        </div>
+        <div class="chart-shell" style="padding: 1rem 1.1rem 1.15rem;">
+          <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Novel vs AG train</h2>
+          <ul class="chips">
+            <li>tory</li>
+            <li>ukip</li>
+            <li>mirza</li>
+            <li>sania</li>
+            <li>auschwitz</li>
+            <li>eurosceptic</li>
+            <li>fly-half</li>
+            <li>gallas</li>
+            <li>hodgson</li>
+            <li>barkley</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Computed with <code>python novel_words.py</code> from
+      <code>data/uk_train.csv</code>, <code>data/uk_test.csv</code>, and
+      <code>data/ag_train.csv</code>.
+      See also <a href="index.html">classification</a>,
+      <a href="similarity.html">embeddings</a>,
+      <a href="lengths.html">lengths</a>, and
+      <a href="README.md">README</a>.
+    </footer>
+  </main>
+
+  <script>
+    const ink = "#14201c";
+    const teal = "#0f766e";
+    const amber = "#c2410c";
+    const slate = "#64748b";
+
+    const byLabelOpts = (yTitle, unit) => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "top", labels: { boxWidth: 12, usePointStyle: true } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} ${unit}`,
+          },
+        },
+      },
+      scales: {
+        y: {
+          title: { display: true, text: yTitle, color: ink },
+          grid: { color: "rgba(20, 32, 28, 0.06)" },
+        },
+        x: { grid: { display: false } },
+      },
+      animation: { duration: 900, easing: "easeOutQuart" },
+    });
+
+    new Chart(document.getElementById("byLabelTypesChart"), {
+      type: "bar",
+      data: {
+        labels: ["business", "sport", "tech", "politics"],
+        datasets: [
+          {
+            label: "Novel vs UK train",
+            data: [178, 185, 137, 120],
+            backgroundColor: teal,
+            borderRadius: 6,
+            maxBarThickness: 36,
+          },
+          {
+            label: "Novel vs AG train",
+            data: [58, 74, 22, 47],
+            backgroundColor: slate,
+            borderRadius: 6,
+            maxBarThickness: 36,
+          },
+        ],
+      },
+      options: byLabelOpts("Novel types", "types"),
+    });
+
+    new Chart(document.getElementById("byLabelTokensChart"), {
+      type: "bar",
+      data: {
+        labels: ["business", "sport", "tech", "politics"],
+        datasets: [
+          {
+            label: "Novel vs UK train",
+            data: [218, 224, 151, 146],
+            backgroundColor: teal,
+            borderRadius: 6,
+            maxBarThickness: 36,
+          },
+          {
+            label: "Novel vs AG train",
+            data: [68, 97, 23, 67],
+            backgroundColor: slate,
+            borderRadius: 6,
+            maxBarThickness: 36,
+          },
+        ],
+      },
+      options: byLabelOpts("Novel tokens", "tokens"),
+    });
+
+    new Chart(document.getElementById("vocabChart"), {
+      type: "bar",
+      data: {
+        labels: ["UK train", "UK test", "AG train"],
+        datasets: [{
+          label: "Unique words",
+          data: [4656, 1788, 38838],
+          backgroundColor: [teal, amber, slate],
+          borderRadius: 8,
+          maxBarThickness: 48,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.parsed.y.toLocaleString()} types`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            title: { display: true, text: "Vocabulary size", color: ink },
+            ticks: { callback: (v) => v.toLocaleString() },
+            grid: { color: "rgba(20, 32, 28, 0.06)" },
+          },
+          x: { grid: { display: false } },
+        },
+        animation: { duration: 900, easing: "easeOutQuart" },
+      },
+    });
+
+    new Chart(document.getElementById("novelChart"), {
+      type: "bar",
+      data: {
+        labels: ["vs UK train", "vs AG train", "vs both"],
+        datasets: [
+          {
+            label: "Novel types",
+            data: [602, 200, 160],
+            backgroundColor: teal,
+            borderRadius: 8,
+            maxBarThickness: 40,
+          },
+          {
+            label: "Novel tokens",
+            data: [739, 255, 191],
+            backgroundColor: slate,
+            borderRadius: 8,
+            maxBarThickness: 40,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "top", labels: { boxWidth: 12, usePointStyle: true } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            title: { display: true, text: "Count", color: ink },
+            grid: { color: "rgba(20, 32, 28, 0.06)" },
+          },
+          x: { grid: { display: false } },
+        },
+        animation: { duration: 900, easing: "easeOutQuart" },
+      },
+    });
+  </script>
+</body>
+</html>

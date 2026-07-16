@@ -1,0 +1,14 @@
+{
+  "checkpoint": "artifacts/model_ag_headlines",
+  "n_test": 261,
+  "accuracy": 0.8812260536398467,
+  "macro_f1": 0.8695478432554812,
+  "micro_f1": 0.8812260536398467,
+  "per_class_f1": {
+    "business": 0.8903225806451613,
+    "sport": 0.9803921568627451,
+    "tech": 0.8411214953271028,
+    "politics": 0.7663551401869159
+  },
+  "device": "mps"
+}

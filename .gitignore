@@ -1,1 +1,27 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
 .DS_Store
+
+# Data caches / large prepared dumps
+data/raw/
+*.arrow
+*.parquet
+
+# Model weights / checkpoints (keep metrics + markdown)
+artifacts/model_ag_headlines/
+artifacts/model_uk_finetuned/
+artifacts/model_uk_only/
+artifacts/*.joblib
+*.pt
+*.bin
+*.safetensors
+*.onnx
+
+# Hugging Face / trainer leftovers
+runs/
+wandb/
+.cache/
+*.tmp

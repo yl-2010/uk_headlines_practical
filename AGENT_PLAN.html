@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agent Plan — UK Headlines Classifier (Mac Studio)</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --text: #e7ecf3;
+      --muted: #9aa8bc;
+      --accent: #3d9cf0;
+      --ok: #3ecf8e;
+      --warn: #f0b429;
+      --border: #2a3648;
+      --code: #121820;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding: 2rem 1.25rem 4rem;
+    }
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    h1, h2, h3 { line-height: 1.25; }
+    h1 { font-size: 1.85rem; margin-bottom: 0.35rem; }
+    h2 {
+      margin-top: 2.25rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 1.25rem;
+    }
+    h3 { margin-top: 1.4rem; font-size: 1.05rem; color: var(--accent); }
+    p, li { color: var(--text); }
+    .muted { color: var(--muted); }
+    .lead { font-size: 1.05rem; color: var(--muted); margin-top: 0; }
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: #243044;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      margin: 1rem 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+      margin: 0.75rem 0 1rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #222c3d; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.88rem;
+    }
+    code {
+      background: var(--code);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+    pre {
+      background: var(--code);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      overflow-x: auto;
+      color: #d7e0ec;
+    }
+    ol.setup > li, ol.pipeline > li { margin: 0.55rem 0; }
+    .do { color: var(--ok); font-weight: 600; }
+    .dont { color: #ff7b72; font-weight: 600; }
+    .warn { color: var(--warn); }
+    a { color: var(--accent); }
+    footer {
+      margin-top: 3rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .checklist li { margin: 0.4rem 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="badge">Cursor agent brief · Mac Studio M3 Ultra · 96 GB</div>
+    <h1>UK Headlines Topic Classifier</h1>
+    <p class="lead">
+      Set up and run a before/after fine-tuning project: train a DistilBERT headline
+      classifier on general (AG News) titles, evaluate on held-out UK BBC headlines,
+      fine-tune on UK data, then compare accuracy, macro-F1, and micro-F1 on the same UK test set.
+      Also report a Multinomial Naive Bayes baseline (course-aligned).
+    </p>
+
+    <div class="card">
+      <strong>Agent role.</strong>
+      You are implementing this project under <code>uk_headlines/</code> on the user’s
+      Mac Studio. Create the environment, download data, train, evaluate, and write
+      results into this folder. Do <span class="dont">not</span> modify lecture
+      notebooks (<code>lect2/</code>, <code>lect3/</code>, <code>lect4/</code>, <code>lect5/</code>)
+      unless the user asks. Do <span class="dont">not</span> commit secrets
+      (<code>api_key.txt</code>, <code>.env</code>).
+    </div>
+
+    <h2>1. Goal (one sentence)</h2>
+    <p>
+      Show that a news-headline topic classifier adapted to UK news scores higher on a
+      frozen UK test set after UK fine-tuning than the same model trained only on
+      general AG News headlines.
+    </p>
+
+    <h2>2. Hardware and runtime assumptions</h2>
+    <div class="grid">
+      <div class="card">
+        <h3 style="margin-top:0">Machine</h3>
+        <ul>
+          <li>Mac Studio, Apple M3 Ultra</li>
+          <li>96 GB unified memory</li>
+          <li>Use PyTorch <strong>MPS</strong> backend</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Time budget</h3>
+        <ul>
+          <li>Stage 1 (AG DistilBERT): typically &lt; 1–2 hours</li>
+          <li>Stage 2 (UK fine-tune): minutes</li>
+          <li>Naive Bayes: seconds</li>
+          <li>Stay well under 24 hours wall clock</li>
+        </ul>
+      </div>
+    </div>
+    <p class="muted">
+      DistilBERT is small; prefer Hugging Face Transformers + PyTorch MPS over MLX-LM
+      (MLX-LM is aimed at generative LLMs, not this classifier).
+    </p>
+
+    <h2>3. Locked stack</h2>
+    <table>
+      <thead>
+        <tr><th>Piece</th><th>Choice</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Model</td>
+          <td><code>distilbert-base-uncased</code> + 4-way classification head<br />
+            Hub: <a href="https://huggingface.co/distilbert/distilbert-base-uncased">distilbert/distilbert-base-uncased</a>
+          </td>
+        </tr>
+        <tr>
+          <td>Libraries</td>
+          <td><code>torch</code> (MPS), <code>transformers</code>, <code>datasets</code>,
+            <code>accelerate</code>, <code>scikit-learn</code>, <code>pandas</code>,
+            <code>numpy</code>, <code>tqdm</code>, <code>matplotlib</code> (optional for plots)
+          </td>
+        </tr>
+        <tr>
+          <td>General / before data</td>
+          <td><a href="https://huggingface.co/datasets/fancyzhx/ag_news">fancyzhx/ag_news</a> —
+            use the <strong>title</strong> field only</td>
+        </tr>
+        <tr>
+          <td>UK fine-tune + test data</td>
+          <td><a href="https://huggingface.co/datasets/SetFit/bbc-news">SetFit/bbc-news</a>
+            (BBC UK, 2,225 docs)</td>
+        </tr>
+        <tr>
+          <td>Classical baseline</td>
+          <td>Multinomial Naive Bayes + bag-of-words / unigrams (same labels and UK test)</td>
+        </tr>
+        <tr>
+          <td>Metrics</td>
+          <td>Accuracy + <strong>macro-F1</strong> + <strong>micro-F1</strong> on frozen UK test; confusion matrices</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. Label mapping (mandatory)</h2>
+    <p>Unify both datasets to these 4 labels so before/after comparison is valid:</p>
+    <table>
+      <thead>
+        <tr><th>Unified label</th><th>AG News</th><th>BBC (<code>SetFit/bbc-news</code>)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>business</code></td><td>Business</td><td>business</td></tr>
+        <tr><td><code>sport</code></td><td>Sports</td><td>sport</td></tr>
+        <tr><td><code>tech</code></td><td>Sci/Tech</td><td>tech</td></tr>
+        <tr><td><code>politics</code></td><td>World</td><td>politics</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <span class="warn">Drop</span> all BBC <code>entertainment</code> rows (no clean AG counterpart).
+      Document that AG <code>World</code> ↔ BBC <code>politics</code> is an imperfect but intentional mapping.
+    </p>
+
+    <h2>5. Folder layout to create</h2>
+    <p>Create everything under <code>uk_headlines/</code> (this directory):</p>
+    <pre>uk_headlines/
+  AGENT_PLAN.html          # this brief (already present)
+  README.md                # short human summary of how to run
+  requirements.txt
+  prepare_data.py
+  train_stage1.py          # AG News DistilBERT
+  train_stage2.py          # continue fine-tune on UK (from AG)
+  train_uk_only.py         # DistilBERT on UK only (no AG)
+  train_nb.py              # NB @ AG and NB @ UK
+  evaluate.py
+  data/                    # prepared CSV/JSONL (gitignored if large)
+  artifacts/
+    model_ag_headlines/
+    model_uk_finetuned/
+    model_uk_only/
+    nb_ag.joblib
+    nb_uk.joblib
+    metrics_before.json
+    metrics_after.json
+    metrics_uk_only.json
+    results_table.md
+    confusion_*.png        # optional
+  .gitignore               # ignore data caches, checkpoints, __pycache__</pre>
+
+    <h2>6. Environment setup (do this first)</h2>
+    <ol class="setup">
+      <li>Work from repo root: <code>cambridge2026/</code>, project path <code>uk_headlines/</code>.</li>
+      <li>Create a local venv (do not install into system Python):
+        <pre>cd uk_headlines
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install torch torchvision torchaudio
+pip install transformers datasets accelerate scikit-learn pandas numpy tqdm matplotlib joblib</pre>
+        Pin reasonable versions in <code>requirements.txt</code> after a successful install.
+      </li>
+      <li>Verify MPS:
+        <pre>python -c "import torch; print('mps:', torch.backends.mps.is_available())"</pre>
+        If MPS is available, set device to <code>mps</code>. If not, fall back to CPU and note it in the README.
+      </li>
+      <li>Ensure Hugging Face downloads work (network). No API key required for these public datasets/models.
+        Cache will land under <code>~/.cache/huggingface/</code> by default — that is fine.</li>
+      <li>Add <code>uk_headlines/.gitignore</code> covering:
+        <code>.venv/</code>, <code>__pycache__/</code>, <code>data/raw/</code>, large <code>artifacts/model_*</code>,
+        <code>*.pt</code>, HF temp files. Prefer committing small metric JSON / results markdown, not multi‑hundred‑MB weights,
+        unless the user asks to keep checkpoints.</li>
+    </ol>
+
+    <h2>7. Data preparation pipeline</h2>
+    <ol class="pipeline">
+      <li><strong>AG News</strong> — load <code>fancyzhx/ag_news</code>; keep <code>title</code> + mapped unified label.
+        Cap Stage-1 training with a <strong>stratified</strong> subset of about <strong>20k–40k</strong> titles
+        (faster, still strong). Keep a small AG val split for Stage-1 early monitoring if useful.</li>
+      <li><strong>BBC UK</strong> — load <code>SetFit/bbc-news</code>; map labels; drop <code>entertainment</code>.</li>
+      <li><strong>Headline text for BBC</strong> — if rows are full articles, build a headline proxy:
+        prefer a real title field if present; otherwise first sentence or first ~12–20 whitespace tokens.
+        Document the rule in README.</li>
+      <li><strong>UK split</strong> — stratified <strong>70% train / 15% val / 15% test</strong>, fixed seed (e.g. 42).
+        <span class="do">Freeze the UK test set</span>. Never use it for training, early stopping, or model selection.</li>
+      <li>Save prepared files under <code>data/</code> (e.g. <code>ag_train.csv</code>, <code>uk_train.csv</code>,
+        <code>uk_val.csv</code>, <code>uk_test.csv</code>) with columns <code>text,label</code>.</li>
+    </ol>
+
+    <h2>8. Training and evaluation</h2>
+    <h3>Stage 1 — basic DistilBERT (“before”)</h3>
+    <ul>
+      <li>Init from <code>distilbert-base-uncased</code>.</li>
+      <li>Train on AG titles → 4 labels. Max length short (e.g. 64).</li>
+      <li>Save to <code>artifacts/model_ag_headlines/</code>.</li>
+      <li>Evaluate on <strong>UK test only</strong> → <code>artifacts/metrics_before.json</code>
+        (accuracy, macro-F1, micro-F1, per-class F1).</li>
+    </ul>
+
+    <h3>Stage 2 — UK fine-tune (“after”)</h3>
+    <ul>
+      <li>Load Stage-1 checkpoint (do not re-init from base).</li>
+      <li>Continue train on UK train; early-stop on UK val (about 1–3 epochs; small data — avoid overfit).</li>
+      <li>Save to <code>artifacts/model_uk_finetuned/</code>.</li>
+      <li>Evaluate on the <strong>same UK test</strong> → <code>artifacts/metrics_after.json</code>.</li>
+    </ul>
+
+    <h3>UK only — fine-tune from base on UK (no AG)</h3>
+    <ul>
+      <li>Init from <code>distilbert-base-uncased</code> (do not load Stage 1).</li>
+      <li>Train on UK train; early-stop on UK val (same recipe as Stage 2).</li>
+      <li>Save to <code>artifacts/model_uk_only/</code>.</li>
+      <li>Evaluate on the <strong>same UK test</strong> → <code>artifacts/metrics_uk_only.json</code>.</li>
+      <li>Isolates UK data alone vs AG → UK continued training.</li>
+    </ul>
+
+    <h3>Naive Bayes baseline</h3>
+    <ul>
+      <li>Train NB on AG titles; score UK test.</li>
+      <li>Retrain NB on UK train; score same UK test.</li>
+      <li>Save models with joblib under <code>artifacts/</code>.</li>
+    </ul>
+
+    <h3>Results table (write <code>artifacts/results_table.md</code>)</h3>
+    <table>
+      <thead>
+        <tr><th>System</th><th>UK test accuracy</th><th>UK test macro-F1</th><th>UK test micro-F1</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>NB @ AG</td><td>…</td><td>…</td><td>…</td></tr>
+        <tr><td>DistilBERT @ AG (before)</td><td>…</td><td>…</td><td>…</td></tr>
+        <tr><td>NB @ UK</td><td>…</td><td>…</td><td>…</td></tr>
+        <tr><td>DistilBERT UK only (no AG)</td><td>…</td><td>…</td><td>…</td></tr>
+        <tr><td>DistilBERT UK fine-tuned (after)</td><td>…</td><td>…</td><td>…</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Add a short error analysis: UK-specific terms / entities the before model misses
+      (British politics, Premier League, spellings) that improve after fine-tuning.
+      Save as <code>artifacts/error_analysis.md</code>.
+    </p>
+
+    <h2>9. Hard constraints</h2>
+    <ul class="checklist">
+      <li><span class="do">DO</span> use the same UK test set for before and after.</li>
+      <li><span class="do">DO</span> report both macro-F1 and micro-F1 (macro is sensitive to rare classes; micro / accuracy reflect overall instance-level performance — compare them).</li>
+      <li><span class="do">DO</span> keep scripts runnable with <code>source .venv/bin/activate</code> then
+        <code>python prepare_data.py</code> etc.</li>
+      <li><span class="dont">DO NOT</span> train on UK test or peek at test labels while tuning hyperparameters beyond val.</li>
+      <li><span class="dont">DO NOT</span> train a large generative LLM from scratch.</li>
+      <li><span class="dont">DO NOT</span> commit <code>api_key.txt</code> or dump huge raw HF caches into git.</li>
+      <li><span class="dont">DO NOT</span> rewrite unrelated lecture practicals.</li>
+    </ul>
+
+    <h2>10. Suggested run order</h2>
+    <pre>cd uk_headlines
+source .venv/bin/activate
+python prepare_data.py
+python train_nb.py
+python train_stage1.py
+python evaluate.py --checkpoint artifacts/model_ag_headlines --out artifacts/metrics_before.json
+python train_stage2.py
+python evaluate.py --checkpoint artifacts/model_uk_finetuned --out artifacts/metrics_after.json
+python train_uk_only.py
+python evaluate.py --checkpoint artifacts/model_uk_only --out artifacts/metrics_uk_only.json --confusion-name confusion_uk_only.png
+# then assemble results_table.md + error_analysis.md</pre>
+    <p class="muted">
+      Script names may be consolidated into one notebook if clearer, but keep the same stages
+      and artifact paths so a later agent can resume.
+    </p>
+
+    <h2>11. Definition of done</h2>
+    <ul class="checklist">
+      <li><span class="do">Done.</span> Venv + <code>requirements.txt</code> work on Mac Studio with MPS verified.</li>
+      <li><span class="do">Done.</span> Prepared AG + UK CSVs exist; UK split is stratified and frozen.</li>
+      <li><span class="do">Done.</span> Before and after DistilBERT metrics on UK test are recorded.</li>
+      <li><span class="do">Done.</span> NB @ AG and NB @ UK metrics recorded.</li>
+      <li><span class="do">Done.</span> <code>artifacts/results_table.md</code> shows after ≥ before on macro-F1 and micro-F1.</li>
+      <li><span class="do">Done.</span> README explains how to reproduce in under a page.</li>
+    </ul>
+
+    <h2>12. Risks (acknowledge in write-up)</h2>
+    <ul>
+      <li><code>World</code> ↔ <code>politics</code> mapping is imperfect.</li>
+      <li>BBC rows may be article bodies; headline proxy must be documented.</li>
+      <li>UK set is small — use early stopping and modest Stage-2 epochs.</li>
+    </ul>
+
+    <footer>
+      Project folder: <code>uk_headlines/</code> · Target host: Mac Studio M3 Ultra 96 GB ·
+      Course themes: NLU, Naive Bayes / MLE, evaluation (accuracy, macro-F1, micro-F1), domain adaptation via fine-tuning.
+    </footer>
+  </main>
+</body>
+</html>

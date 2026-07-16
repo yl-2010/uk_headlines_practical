@@ -1,0 +1,14 @@
+{
+  "checkpoint": "artifacts/model_uk_only",
+  "n_test": 261,
+  "accuracy": 0.946360153256705,
+  "macro_f1": 0.9431603745198971,
+  "micro_f1": 0.946360153256705,
+  "per_class_f1": {
+    "business": 0.9426751592356688,
+    "sport": 0.9803921568627451,
+    "tech": 0.9278350515463918,
+    "politics": 0.9217391304347826
+  },
+  "device": "mps"
+}

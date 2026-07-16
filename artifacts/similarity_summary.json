@@ -1,0 +1,236 @@
+{
+  "n_per_label": 25,
+  "seed": 42,
+  "n_headlines": 200,
+  "labels": [
+    "business",
+    "sport",
+    "tech",
+    "politics"
+  ],
+  "group_order": [
+    "AG-business",
+    "AG-sport",
+    "AG-tech",
+    "AG-politics",
+    "UK-business",
+    "UK-sport",
+    "UK-tech",
+    "UK-politics"
+  ],
+  "sample_csv": "embed_sample.csv",
+  "models": {
+    "ag": {
+      "checkpoint": "/Users/yanlevin/github/cambridge2026/uk_headlines/artifacts/model_ag_headlines",
+      "heatmap": "similarity_heatmap_ag.png",
+      "group_order": [
+        "AG-business",
+        "AG-sport",
+        "AG-tech",
+        "AG-politics",
+        "UK-business",
+        "UK-sport",
+        "UK-tech",
+        "UK-politics"
+      ],
+      "matrix": [
+        [
+          1.0,
+          -0.07,
+          0.4289,
+          0.2863,
+          0.966,
+          -0.0615,
+          0.3427,
+          0.4935
+        ],
+        [
+          -0.07,
+          1.0,
+          -0.1896,
+          0.1558,
+          -0.0674,
+          0.9654,
+          -0.1954,
+          0.0688
+        ],
+        [
+          0.4289,
+          -0.1896,
+          1.0,
+          0.0673,
+          0.3193,
+          -0.1908,
+          0.9857,
+          0.2573
+        ],
+        [
+          0.2863,
+          0.1558,
+          0.0673,
+          1.0,
+          0.3817,
+          0.2112,
+          0.039,
+          0.8928
+        ],
+        [
+          0.966,
+          -0.0674,
+          0.3193,
+          0.3817,
+          1.0,
+          -0.0427,
+          0.2331,
+          0.5801
+        ],
+        [
+          -0.0615,
+          0.9654,
+          -0.1908,
+          0.2112,
+          -0.0427,
+          1.0,
+          -0.1957,
+          0.1213
+        ],
+        [
+          0.3427,
+          -0.1954,
+          0.9857,
+          0.039,
+          0.2331,
+          -0.1957,
+          1.0,
+          0.2196
+        ],
+        [
+          0.4935,
+          0.0688,
+          0.2573,
+          0.8928,
+          0.5801,
+          0.1213,
+          0.2196,
+          1.0
+        ]
+      ],
+      "same_label_ag_uk": {
+        "business": 0.966,
+        "sport": 0.9654,
+        "tech": 0.9857,
+        "politics": 0.8928
+      },
+      "cross_domain": {
+        "mean_same_label": 0.9525,
+        "mean_different_label": 0.1332
+      }
+    },
+    "uk_only": {
+      "checkpoint": "/Users/yanlevin/github/cambridge2026/uk_headlines/artifacts/model_uk_only",
+      "heatmap": "similarity_heatmap_uk_only.png",
+      "group_order": [
+        "AG-business",
+        "AG-sport",
+        "AG-tech",
+        "AG-politics",
+        "UK-business",
+        "UK-sport",
+        "UK-tech",
+        "UK-politics"
+      ],
+      "matrix": [
+        [
+          1.0,
+          0.3125,
+          0.549,
+          0.6213,
+          0.9558,
+          0.0642,
+          0.3555,
+          0.1523
+        ],
+        [
+          0.3125,
+          1.0,
+          0.2755,
+          0.4716,
+          0.2463,
+          0.8738,
+          0.2042,
+          0.1666
+        ],
+        [
+          0.549,
+          0.2755,
+          1.0,
+          0.3772,
+          0.3226,
+          0.0258,
+          0.9644,
+          0.1005
+        ],
+        [
+          0.6213,
+          0.4716,
+          0.3772,
+          1.0,
+          0.5441,
+          0.1913,
+          0.2374,
+          0.7344
+        ],
+        [
+          0.9558,
+          0.2463,
+          0.3226,
+          0.5441,
+          1.0,
+          0.0606,
+          0.1159,
+          0.0877
+        ],
+        [
+          0.0642,
+          0.8738,
+          0.0258,
+          0.1913,
+          0.0606,
+          1.0,
+          -0.0045,
+          -0.0046
+        ],
+        [
+          0.3555,
+          0.2042,
+          0.9644,
+          0.2374,
+          0.1159,
+          -0.0045,
+          1.0,
+          0.0568
+        ],
+        [
+          0.1523,
+          0.1666,
+          0.1005,
+          0.7344,
+          0.0877,
+          -0.0046,
+          0.0568,
+          1.0
+        ]
+      ],
+      "same_label_ag_uk": {
+        "business": 0.9558,
+        "sport": 0.8738,
+        "tech": 0.9644,
+        "politics": 0.7344
+      },
+      "cross_domain": {
+        "mean_same_label": 0.8821,
+        "mean_different_label": 0.2176
+      }
+    }
+  }
+}

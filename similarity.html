@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UK Headlines Classifier — Embedding Similarity</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --ink: #14201c;
+      --muted: #5a6b63;
+      --paper: #f3f6f2;
+      --panel: rgba(255, 255, 255, 0.72);
+      --line: rgba(20, 32, 28, 0.12);
+      --teal: #0f766e;
+      --before: #64748b;
+      --nb: #a16207;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "DM Sans", sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(20, 184, 166, 0.18), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(194, 65, 12, 0.12), transparent 50%),
+        linear-gradient(180deg, #e8efe9 0%, var(--paper) 40%, #eef3ef 100%);
+      line-height: 1.5;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      z-index: 0;
+    }
+
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem 0.5rem;
+      padding: 0.7rem 1.25rem;
+      background: rgba(243, 246, 242, 0.88);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    .site-nav .brand {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 1.05rem;
+      color: var(--ink);
+      text-decoration: none;
+      margin-right: 0.75rem;
+    }
+
+    .site-nav .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .site-nav a.nav-link {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .site-nav a.nav-link:hover {
+      color: var(--ink);
+      background: rgba(15, 118, 110, 0.08);
+    }
+
+    .site-nav a.nav-link.active {
+      color: var(--teal);
+      background: rgba(15, 118, 110, 0.12);
+      border-color: rgba(15, 118, 110, 0.22);
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 0.6rem;
+      opacity: 0;
+      animation: rise 0.7s ease forwards;
+    }
+
+    h1 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      line-height: 1.05;
+      margin: 0 0 0.75rem;
+      letter-spacing: -0.02em;
+      opacity: 0;
+      animation: rise 0.7s ease 0.08s forwards;
+    }
+
+    .lead {
+      max-width: 40rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin: 0 0 2rem;
+      opacity: 0;
+      animation: rise 0.7s ease 0.16s forwards;
+    }
+
+    section {
+      margin: 2.5rem 0;
+      opacity: 0;
+      animation: rise 0.75s ease 0.3s forwards;
+    }
+
+    h2 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: 1.75rem;
+      margin: 0 0 0.35rem;
+    }
+
+    .section-note {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin: 0 0 1.1rem;
+    }
+
+    .chart-shell {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1rem 1rem 0.5rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 18px 40px rgba(20, 32, 28, 0.06);
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: min(420px, 62vw);
+    }
+
+    .chart-wrap.short {
+      height: min(320px, 50vw);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 820px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.7rem 0.55rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .cm-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .cm-grid { grid-template-columns: 1fr; }
+    }
+
+    .cm-grid figure {
+      margin: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 0.85rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .cm-grid img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 10px;
+    }
+
+    figcaption {
+      margin-top: 0.55rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    footer a { color: var(--teal); }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="Site">
+    <a class="brand" href="index.html">UK Headlines</a>
+    <div class="links">
+      <a class="nav-link" href="index.html">Classification</a>
+      <a class="nav-link active" href="similarity.html" aria-current="page">Embeddings</a>
+      <a class="nav-link" href="lengths.html">Lengths</a>
+      <a class="nav-link" href="novel-words.html">Novel words</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="eyebrow">Cambridge 2026 · UK headlines · MPS</div>
+    <h1>Embedding similarity</h1>
+    <p class="lead">
+      How close AG and UK headlines sit in DistilBERT space — comparing the
+      AG-only checkpoint with the UK-only checkpoint (not AG→UK transfer).
+    </p>
+
+    <section>
+      <h2>Category centroid cosines</h2>
+      <p class="section-note">
+        25 headlines per label from AG train and UK (n = 200, seed 42).
+        CLS embeddings from AG-only and UK-only DistilBERT; cells are cosine
+        similarity of L2-normalized category centroids.
+      </p>
+      <div class="cm-grid">
+        <figure>
+          <img src="artifacts/similarity_heatmap_ag.png" alt="Category centroid cosine heatmap DistilBERT AG only" />
+          <figcaption>DistilBERT @ AG — category centroids</figcaption>
+        </figure>
+        <figure>
+          <img src="artifacts/similarity_heatmap_uk_only.png" alt="Category centroid cosine heatmap DistilBERT UK only" />
+          <figcaption>DistilBERT UK only — category centroids</figcaption>
+        </figure>
+      </div>
+
+      <div class="grid-2" style="margin-top: 1rem;">
+        <div class="chart-shell">
+          <div class="chart-wrap short">
+            <canvas id="similarityChart" aria-label="Same-label AG vs UK cosine under AG-only and UK-only DistilBERT"></canvas>
+          </div>
+        </div>
+        <div class="chart-shell" style="padding: 0.5rem 1rem 0.25rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Label</th>
+                <th class="num">AG model</th>
+                <th class="num">UK-only model</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>business</td>
+                <td class="num">0.9660</td>
+                <td class="num">0.9558</td>
+              </tr>
+              <tr>
+                <td>sport</td>
+                <td class="num">0.9654</td>
+                <td class="num">0.8738</td>
+              </tr>
+              <tr>
+                <td>tech</td>
+                <td class="num">0.9857</td>
+                <td class="num">0.9644</td>
+              </tr>
+              <tr>
+                <td>politics</td>
+                <td class="num">0.8928</td>
+                <td class="num">0.7344</td>
+              </tr>
+              <tr>
+                <td>Mean same-label</td>
+                <td class="num"><strong>0.9525</strong></td>
+                <td class="num">0.8821</td>
+              </tr>
+              <tr>
+                <td>Mean different-label</td>
+                <td class="num">0.1332</td>
+                <td class="num">0.2176</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="section-note" style="margin: 0.75rem 0 0.5rem;">
+            Values are cosine(AG-label, UK-label). AG-only keeps same-topic AG/UK
+            centroids closer (and different topics farther) than UK-only.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Labels: business · sport · tech · politics.
+      See also <a href="index.html">classification</a>,
+      <a href="lengths.html">lengths</a>,
+      <a href="novel-words.html">novel words</a>,
+      <a href="RESULTS.md">RESULTS.md</a>, and
+      <a href="artifacts/similarity_summary.json">similarity_summary.json</a>.
+    </footer>
+  </main>
+
+  <script>
+    const ink = "#14201c";
+    const muted = "#5a6b63";
+    const before = "#64748b";
+    const gold = "#a16207";
+
+    Chart.defaults.font.family = '"DM Sans", sans-serif';
+    Chart.defaults.color = muted;
+    Chart.defaults.borderColor = "rgba(20, 32, 28, 0.08)";
+
+    new Chart(document.getElementById("similarityChart"), {
+      type: "bar",
+      data: {
+        labels: ["business", "sport", "tech", "politics"],
+        datasets: [
+          {
+            label: "AG model",
+            data: [0.9660, 0.9654, 0.9857, 0.8928],
+            backgroundColor: before,
+            borderRadius: 6,
+            maxBarThickness: 36,
+          },
+          {
+            label: "UK-only model",
+            data: [0.9558, 0.8738, 0.9644, 0.7344],
+            backgroundColor: gold,
+            borderRadius: 6,
+            maxBarThickness: 36,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "top", labels: { boxWidth: 12, usePointStyle: true } },
+          title: {
+            display: true,
+            text: "Same-label AG↔UK centroid cosine",
+            color: ink,
+            font: { size: 14, weight: "600" },
+            padding: { bottom: 12 },
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(4)}`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            min: 0.6,
+            max: 1,
+            ticks: { callback: (v) => v.toFixed(2) },
+            grid: { color: "rgba(20, 32, 28, 0.06)" },
+            title: { display: true, text: "Cosine", color: muted, font: { size: 12 } },
+          },
+          x: { grid: { display: false } },
+        },
+        animation: { duration: 900, easing: "easeOutQuart" },
+      },
+    });
+  </script>
+</body>
+</html>

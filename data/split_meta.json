@@ -1,0 +1,16 @@
+{
+  "seed": 42,
+  "ag_train_cap": 30000,
+  "ag_rows": 30000,
+  "uk_all_rows": 1839,
+  "uk_train": 1287,
+  "uk_val": 276,
+  "uk_test": 276,
+  "labels": [
+    "business",
+    "sport",
+    "tech",
+    "politics"
+  ],
+  "mapping_notes": "AG World\u2192politics; BBC entertainment dropped; BBC text uses title or first-sentence proxy"
+}
