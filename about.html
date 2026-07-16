@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About — UK Headlines Classifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #14201c;
+      --muted: #5a6b63;
+      --paper: #f3f6f2;
+      --panel: rgba(255, 255, 255, 0.72);
+      --line: rgba(20, 32, 28, 0.12);
+      --teal: #0f766e;
+      --teal-soft: #14b8a6;
+      --amber: #c2410c;
+      --slate: #475569;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "DM Sans", sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(20, 184, 166, 0.18), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(194, 65, 12, 0.12), transparent 50%),
+        linear-gradient(180deg, #e8efe9 0%, var(--paper) 40%, #eef3ef 100%);
+      line-height: 1.55;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      z-index: 0;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 0.6rem;
+      opacity: 0;
+      animation: rise 0.7s ease forwards;
+    }
+
+    h1 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: clamp(2.2rem, 5vw, 3.2rem);
+      line-height: 1.05;
+      margin: 0 0 0.75rem;
+      letter-spacing: -0.02em;
+      opacity: 0;
+      animation: rise 0.7s ease 0.08s forwards;
+    }
+
+    .lead {
+      max-width: 40rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin: 0 0 2rem;
+      opacity: 0;
+      animation: rise 0.7s ease 0.16s forwards;
+    }
+
+    .toc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0 0 2.5rem;
+      opacity: 0;
+      animation: rise 0.7s ease 0.24s forwards;
+    }
+
+    .toc a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 600;
+      padding: 0.35rem 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .toc a:hover {
+      color: var(--teal);
+      border-color: rgba(15, 118, 110, 0.28);
+      background: rgba(15, 118, 110, 0.08);
+    }
+
+    section {
+      margin: 2.75rem 0;
+      opacity: 0;
+      animation: rise 0.75s ease forwards;
+    }
+
+    section:nth-of-type(1) { animation-delay: 0.3s; }
+    section:nth-of-type(2) { animation-delay: 0.38s; }
+    section:nth-of-type(3) { animation-delay: 0.46s; }
+    section:nth-of-type(4) { animation-delay: 0.54s; }
+    section:nth-of-type(5) { animation-delay: 0.62s; }
+    section:nth-of-type(6) { animation-delay: 0.7s; }
+    section:nth-of-type(7) { animation-delay: 0.78s; }
+    section:nth-of-type(8) { animation-delay: 0.86s; }
+    section:nth-of-type(9) { animation-delay: 0.94s; }
+
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem 0.5rem;
+      padding: 0.7rem 1.25rem;
+      background: rgba(243, 246, 242, 0.88);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    .site-nav .brand {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 1.05rem;
+      color: var(--ink);
+      text-decoration: none;
+      margin-right: 0.75rem;
+    }
+
+    .site-nav .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .site-nav a.nav-link {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .site-nav a.nav-link:hover {
+      color: var(--ink);
+      background: rgba(15, 118, 110, 0.08);
+    }
+
+    .site-nav a.nav-link.active {
+      color: var(--teal);
+      background: rgba(15, 118, 110, 0.12);
+      border-color: rgba(15, 118, 110, 0.22);
+    }
+
+    h2 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: 1.75rem;
+      margin: 0 0 0.5rem;
+      scroll-margin-top: 4rem;
+    }
+
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 1.4rem 0 0.45rem;
+      color: var(--ink);
+    }
+
+    p { margin: 0 0 0.9rem; color: var(--ink); }
+    p.muted, .section-note {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    ul, ol {
+      margin: 0 0 1rem;
+      padding-left: 1.2rem;
+      color: var(--ink);
+    }
+
+    li { margin: 0.35rem 0; }
+
+    a:not(.nav-link):not(.brand):not(.toc a) {
+      color: var(--teal);
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin: 1rem 0 1.25rem;
+    }
+
+    @media (max-width: 640px) {
+      .spec-grid { grid-template-columns: 1fr; }
+    }
+
+    .spec {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 0.9rem 1rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .spec dt {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .spec dd {
+      margin: 0;
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .spec dd span {
+      display: block;
+      font-weight: 400;
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+
+    .flow {
+      display: grid;
+      gap: 0.55rem;
+      margin: 1rem 0 1.25rem;
+    }
+
+    .flow-step {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      align-items: start;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 0.85rem 1rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .flow-num {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: white;
+      background: var(--teal);
+      flex-shrink: 0;
+    }
+
+    .flow-step h3 {
+      margin: 0 0 0.2rem;
+      font-size: 0.98rem;
+    }
+
+    .flow-step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .arch {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.1rem 1.15rem;
+      margin: 1rem 0 1.25rem;
+      backdrop-filter: blur(10px);
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: var(--slate);
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .arch .hl { color: var(--teal); font-weight: 700; }
+    .arch .dim { color: #8a9a93; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin: 0.75rem 0 1.1rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.65rem 0.5rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    code {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.86em;
+      background: rgba(15, 118, 110, 0.08);
+      color: var(--teal);
+      padding: 0.1em 0.35em;
+      border-radius: 5px;
+    }
+
+    .callout {
+      border-left: 3px solid var(--teal);
+      padding: 0.15rem 0 0.15rem 0.9rem;
+      margin: 1rem 0 1.25rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .callout strong { color: var(--ink); }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="Site">
+    <a class="brand" href="index.html">UK Headlines</a>
+    <div class="links">
+      <a class="nav-link" href="index.html">Classification</a>
+      <a class="nav-link" href="similarity.html">Embeddings</a>
+      <a class="nav-link" href="lengths.html">Lengths</a>
+      <a class="nav-link" href="novel-words.html">Novel words</a>
+      <a class="nav-link active" href="about.html" aria-current="page">About</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="eyebrow">Cambridge 2026 · Project brief</div>
+    <h1>About this project</h1>
+    <p class="lead">
+      A domain-adaptation practical: train a headline topic classifier on general
+      AG News titles, evaluate on a frozen UK BBC test set, then fine-tune on UK
+      data and measure the lift — all on a Mac Studio with Apple Silicon MPS.
+    </p>
+
+    <nav class="toc" aria-label="On this page">
+      <a href="#goal">Goal</a>
+      <a href="#hardware">Mac Studio</a>
+      <a href="#model">Model</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#finetuning">Fine-tuning</a>
+      <a href="#data">Data &amp; labels</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#eval">Evaluation</a>
+      <a href="#caveats">Caveats</a>
+    </nav>
+
+    <section id="goal">
+      <h2>What we’re asking</h2>
+      <p>
+        Can a classifier trained on broad, mostly US-centric news titles transfer
+        to UK BBC headlines — and does continued fine-tuning on UK text close the gap?
+      </p>
+      <p class="muted">
+        We compare five systems on the <em>same</em> frozen UK test set: Naive Bayes
+        @ AG, DistilBERT @ AG, Naive Bayes @ UK, DistilBERT UK-only (no AG), and
+        DistilBERT AG→UK continued fine-tuning. Charts live on the
+        <a href="index.html">classification</a> page.
+      </p>
+    </section>
+
+    <section id="hardware">
+      <h2>Hardware: Mac Studio</h2>
+      <p>
+        Training and inference ran locally on Apple Silicon — not a cloud GPU box.
+        DistilBERT is small enough that this machine is more than enough; the
+        practical constraint was getting PyTorch’s MPS backend working cleanly.
+      </p>
+      <div class="spec-grid">
+        <div class="spec">
+          <dl>
+            <dt>Machine</dt>
+            <dd>Mac Studio<span>Apple M3 Ultra</span></dd>
+          </dl>
+        </div>
+        <div class="spec">
+          <dl>
+            <dt>Memory</dt>
+            <dd>96 GB unified<span>CPU + GPU share the same pool</span></dd>
+          </dl>
+        </div>
+        <div class="spec">
+          <dl>
+            <dt>Compute path</dt>
+            <dd>PyTorch MPS<span><code>torch.backends.mps</code> when available</span></dd>
+          </dl>
+        </div>
+        <div class="spec">
+          <dl>
+            <dt>Why not MLX-LM?</dt>
+            <dd>Classifier, not LLM<span>Hugging Face Transformers + Torch</span></dd>
+          </dl>
+        </div>
+      </div>
+      <p class="callout">
+        <strong>MPS notes:</strong> we avoid fp16 mixed-precision quirks on MPS,
+        keep batches modest (32 / 16), and set <code>dataloader_pin_memory=False</code>.
+        Stage 1 is typically under 1–2 hours; Stage 2 is minutes; Naive Bayes is seconds.
+      </p>
+    </section>
+
+    <section id="model">
+      <h2>Model: DistilBERT</h2>
+      <p>
+        Backbone: <a href="https://huggingface.co/distilbert/distilbert-base-uncased"><code>distilbert-base-uncased</code></a>
+        with a fresh 4-way sequence-classification head
+        (<code>AutoModelForSequenceClassification</code>).
+      </p>
+      <ul>
+        <li><strong>~66M parameters</strong> — about 40% of BERT-base, trained by knowledge distillation.</li>
+        <li><strong>Uncased WordPiece</strong> tokenizer; max sequence length capped at <strong>64</strong> tokens (headlines / short prefixes).</li>
+        <li><strong>4 labels:</strong> <code>business</code>, <code>sport</code>, <code>tech</code>, <code>politics</code>.</li>
+        <li>Classical baseline: Multinomial Naive Bayes + bag-of-words unigrams (<code>CountVectorizer</code>, <code>min_df=2</code>).</li>
+      </ul>
+    </section>
+
+    <section id="architecture">
+      <h2>Lower-level architecture</h2>
+      <p>
+        DistilBERT is a compressed Transformer encoder. It keeps the BERT-style
+        stack but drops the next-sentence prediction objective and halves the depth,
+        then trains the student to match a BERT teacher.
+      </p>
+
+      <h3>Encoder stack</h3>
+      <div class="arch"><span class="dim">Input ids + attention mask</span>
+        │
+        ▼
+<span class="hl">Token + position embeddings</span>  <span class="dim">(dim 768)</span>
+        │
+        ▼
+<span class="hl">6 × Transformer blocks</span>
+  <span class="dim">each:</span> Multi-Head Self-Attention (12 heads)
+           → residual + LayerNorm
+           → Feed-Forward (768 → 3072 → 768)
+           → residual + LayerNorm
+        │
+        ▼
+<span class="hl">[CLS] pooled representation</span>  <span class="dim">(768-d)</span>
+        │
+        ▼
+<span class="hl">Linear classification head</span>  <span class="dim">768 → 4 logits</span>
+        │
+        ▼
+ Softmax → predicted topic</div>
+
+      <h3>What “fine-tuning” updates</h3>
+      <p>
+        We do <strong>full continued fine-tuning</strong>: every DistilBERT weight
+        plus the classification head receive gradients. LoRA / adapters were not
+        needed — the model is small, the UK set is small, and full updates finish
+        quickly on MPS.
+      </p>
+      <ul>
+        <li><strong>Forward:</strong> tokenize → pad/truncate to ≤64 → encoder → logits.</li>
+        <li><strong>Loss:</strong> cross-entropy over the four labels.</li>
+        <li><strong>Optimizer path:</strong> Hugging Face <code>Trainer</code> (AdamW-style),
+          lr <code>2e-5</code>, weight decay <code>0.01</code>, seed <code>42</code>.</li>
+        <li><strong>Selection:</strong> best checkpoint by validation <strong>macro-F1</strong>.</li>
+      </ul>
+
+      <h3>Why DistilBERT (not a generative LLM)</h3>
+      <p class="muted">
+        This is single-label topic classification. An encoder with a linear head
+        is the right inductive bias: cheap, stable, and easy to compare against a
+        Naive Bayes bag-of-words baseline. We deliberately do <em>not</em> train a
+        large generative model from scratch.
+      </p>
+    </section>
+
+    <section id="finetuning">
+      <h2>Fine-tuning techniques</h2>
+      <p>
+        The core method is <strong>two-stage domain adaptation</strong> (continued
+        fine-tuning), with an ablated UK-only run to separate “UK data helps”
+        from “AG pre-training still helps.”
+      </p>
+
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div>
+            <h3>Stage 1 — AG News titles (“before”)</h3>
+            <p>
+              Init from <code>distilbert-base-uncased</code>. Train on stratified AG titles
+              (~28.5k train / 1.5k val). 2 epochs, batch 32. Save
+              <code>artifacts/model_ag_headlines/</code>. Evaluate on frozen UK test.
+            </p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div>
+            <h3>Stage 2 — continue on UK (“after”)</h3>
+            <p>
+              Load the Stage-1 checkpoint (do <em>not</em> re-init from base). Train on
+              UK train; early-stop on UK val (patience 1, up to 3 epochs), batch 16.
+              Save <code>artifacts/model_uk_finetuned/</code>. Re-evaluate on the same UK test.
+            </p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div>
+            <h3>Ablation — UK only (no AG)</h3>
+            <p>
+              Fresh <code>distilbert-base-uncased</code> fine-tuned only on UK train/val
+              with the same Stage-2 recipe. Isolates whether gains come from UK data
+              alone vs AG→UK continued training.
+            </p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">4</div>
+          <div>
+            <h3>Baselines — Multinomial Naive Bayes</h3>
+            <p>
+              Bag-of-words NB trained on AG titles, then separately on UK train;
+              both scored on the same UK test. A cheap ceiling/floor check for the
+              neural models.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Knob</th>
+            <th>Stage 1 (AG)</th>
+            <th>Stage 2 / UK-only</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Init</td>
+            <td>Hub base model</td>
+            <td>Stage-1 ckpt / Hub base</td>
+          </tr>
+          <tr>
+            <td>Learning rate</td>
+            <td>2e-5</td>
+            <td>2e-5</td>
+          </tr>
+          <tr>
+            <td>Batch size</td>
+            <td>32</td>
+            <td>16</td>
+          </tr>
+          <tr>
+            <td>Epochs</td>
+            <td>2</td>
+            <td>≤3 + early stop</td>
+          </tr>
+          <tr>
+            <td>Max length</td>
+            <td>64</td>
+            <td>64</td>
+          </tr>
+          <tr>
+            <td>Best model metric</td>
+            <td>macro-F1</td>
+            <td>macro-F1</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="callout">
+        <strong>Not used:</strong> LoRA, QLoRA, prefix-tuning, or frozen-encoder linear probes.
+        Full updates are appropriate here; parameter-efficient methods would mostly
+        add complexity without a clear win on this size of model and data.
+      </p>
+    </section>
+
+    <section id="data">
+      <h2>Data &amp; label mapping</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Role</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="https://huggingface.co/datasets/fancyzhx/ag_news">fancyzhx/ag_news</a></td>
+            <td>Stage 1 train/val</td>
+            <td>Title / short prefix only; stratified ~30k subset</td>
+          </tr>
+          <tr>
+            <td><a href="https://huggingface.co/datasets/SetFit/bbc-news">SetFit/bbc-news</a></td>
+            <td>UK fine-tune + frozen test</td>
+            <td>70 / 15 / 15 train/val/test, seed 42; drop <code>entertainment</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Unified 4-way labels</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Unified</th>
+            <th>AG News</th>
+            <th>BBC</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>business</td>
+            <td>Business</td>
+            <td>business</td>
+          </tr>
+          <tr>
+            <td>sport</td>
+            <td>Sports</td>
+            <td>sport</td>
+          </tr>
+          <tr>
+            <td>tech</td>
+            <td>Sci/Tech</td>
+            <td>tech</td>
+          </tr>
+          <tr>
+            <td>politics</td>
+            <td>World</td>
+            <td>politics</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="muted">
+        AG <code>World</code> → BBC <code>politics</code> is an imperfect bridge on purpose —
+        that mismatch is part of what UK fine-tuning has to fix. BBC rows often lack
+        a clean title field; we use <code>title</code>/<code>headline</code> when present,
+        else the first sentence or first ~16 tokens as a headline proxy.
+      </p>
+    </section>
+
+    <section id="pipeline">
+      <h2>Software pipeline</h2>
+      <p>
+        Scripts are meant to be run in order after <code>source .venv/bin/activate</code>.
+        Prepared CSVs already live in <code>data/</code>; model weights stay gitignored
+        while metrics and charts are committed for GitHub Pages.
+      </p>
+      <ol>
+        <li><code>prepare_data.py</code> — optional regenerate of splits</li>
+        <li><code>train_nb.py</code> — Naive Bayes @ AG and @ UK</li>
+        <li><code>train_stage1.py</code> → <code>evaluate.py</code> (before metrics)</li>
+        <li><code>train_stage2.py</code> → <code>evaluate.py</code> (after metrics)</li>
+        <li><code>train_uk_only.py</code> → <code>evaluate.py</code> (UK-only metrics)</li>
+        <li><code>assemble_results.py</code>, <code>embed_similarity.py</code>, <code>novel_words.py</code></li>
+      </ol>
+      <p class="muted">
+        Stack: PyTorch, Hugging Face Transformers / Datasets / Accelerate,
+        scikit-learn, pandas, matplotlib. See <code>requirements.txt</code> and
+        <a href="AGENT_PLAN.html">AGENT_PLAN.html</a> for the locked brief.
+      </p>
+    </section>
+
+    <section id="eval">
+      <h2>Evaluation design</h2>
+      <ul>
+        <li><strong>Frozen UK test</strong> — never used for training or early stopping.</li>
+        <li><strong>Metrics:</strong> accuracy, macro-F1, micro-F1, per-class F1, confusion matrices.</li>
+        <li><strong>Micro-F1 = accuracy</strong> here (single-label multi-class); both reported for lecture-style comparison.</li>
+        <li><strong>Headline results:</strong> AG→UK fine-tuned reaches ~0.96 accuracy / macro-F1 on UK test;
+          largest class gain vs AG-only is <strong>politics</strong>. Details on
+          <a href="index.html">Classification</a> and in <a href="RESULTS.md">RESULTS.md</a>.</li>
+      </ul>
+      <p>
+        Side analyses dig into <em>why</em> transfer is hard:
+        <a href="similarity.html">embedding centroid similarity</a>,
+        <a href="lengths.html">headline length distributions</a>, and
+        <a href="novel-words.html">UK words missing from AG train</a>.
+      </p>
+    </section>
+
+    <section id="caveats">
+      <h2>Caveats &amp; design risks</h2>
+      <ul>
+        <li>Label bridge <code>World</code> ↔ <code>politics</code> is noisy by construction.</li>
+        <li>BBC “headlines” are sometimes truncated article leads, not newsstand titles.</li>
+        <li>UK data is small — Stage 2 early-stops on val; over-training would memorize fast.</li>
+        <li>AG-only DistilBERT already beats NB @ AG; most of the big jump to ~0.95 comes from UK data itself, with AG→UK still edging UK-only.</li>
+      </ul>
+    </section>
+
+    <footer>
+      Cambridge 2026 · UK Headlines Practical · trained on Mac Studio (M3 Ultra, MPS).
+      Source and scripts live in this repo; open <a href="index.html">results</a> for the charts.
+    </footer>
+  </main>
+</body>
+</html>

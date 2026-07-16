@@ -12,6 +12,7 @@ Domain adaptation for topic classification: DistilBERT trained on AG News titles
 | Embedding similarity | [`similarity.html`](similarity.html) |
 | Headline lengths | [`lengths.html`](lengths.html) |
 | Novel words | [`novel-words.html`](novel-words.html) |
+| About (hardware, model, fine-tuning) | [`about.html`](about.html) |
 
 Local preview: open `index.html` in a browser (relative links to `artifacts/` images must stay next to the HTML files).
 
