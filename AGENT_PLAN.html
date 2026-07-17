@@ -108,6 +108,20 @@
       color: var(--muted);
       font-size: 0.9rem;
     }
+
+    footer .cite {
+      display: block;
+      margin-top: 0.55rem;
+      font-size: 0.78rem;
+      opacity: 0.8;
+    }
+
+    footer .cite a {
+      color: inherit;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
     .checklist li { margin: 0.4rem 0; }
   </style>
 </head>
@@ -389,6 +403,7 @@ python evaluate.py --checkpoint artifacts/model_uk_only --out artifacts/metrics_
     <footer>
       Project folder: <code>uk_headlines/</code> · Target host: Mac Studio M3 Ultra 96 GB ·
       Course themes: NLU, Naive Bayes / MLE, evaluation (accuracy, macro-F1, micro-F1), domain adaptation via fine-tuning.
+      <span class="cite"><a href="https://cylnlp.github.io/">Yulong Chen</a>, Yan Levin, Victor Andiazabal</span>
     </footer>
   </main>
 </body>

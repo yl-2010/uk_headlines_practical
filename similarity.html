@@ -246,6 +246,19 @@
 
     footer a { color: var(--teal); }
 
+    footer .cite {
+      display: block;
+      margin-top: 0.55rem;
+      font-size: 0.78rem;
+      opacity: 0.8;
+    }
+
+    footer .cite a {
+      color: inherit;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
     @keyframes rise {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
@@ -353,6 +366,7 @@
       <a href="novel-words.html">novel words</a>,
       <a href="RESULTS.md">RESULTS.md</a>, and
       <a href="artifacts/similarity_summary.json">similarity_summary.json</a>.
+      <span class="cite"><a href="https://cylnlp.github.io/">Yulong Chen</a>, Yan Levin, Victor Andiazabal</span>
     </footer>
   </main>
 
