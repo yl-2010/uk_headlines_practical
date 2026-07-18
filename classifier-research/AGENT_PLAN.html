@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agent Plan — Student Notes Subject Classifier Research</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --text: #e7ecf3;
+      --muted: #9aa8bc;
+      --accent: #3d9cf0;
+      --ok: #3ecf8e;
+      --warn: #f0b429;
+      --border: #2a3648;
+      --code: #121820;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding: 2rem 1.25rem 4rem;
+    }
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    h1, h2, h3 { line-height: 1.25; }
+    h1 { font-size: 1.85rem; margin-bottom: 0.35rem; }
+    h2 {
+      margin-top: 2.25rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 1.25rem;
+    }
+    h3 { margin-top: 1.4rem; font-size: 1.05rem; color: var(--accent); }
+    p, li { color: var(--text); }
+    .muted { color: var(--muted); }
+    .lead { font-size: 1.05rem; color: var(--muted); margin-top: 0; }
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: #243044;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      margin: 1rem 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+      margin: 0.75rem 0 1rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #222c3d; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.88rem;
+    }
+    code {
+      background: var(--code);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+    pre {
+      background: var(--code);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      overflow-x: auto;
+      color: #d7e0ec;
+    }
+    ol.setup > li, ol.pipeline > li { margin: 0.55rem 0; }
+    .do { color: var(--ok); font-weight: 600; }
+    .dont { color: #ff7b72; font-weight: 600; }
+    .warn { color: var(--warn); }
+    a { color: var(--accent); }
+    footer {
+      margin-top: 3rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    footer .cite {
+      display: block;
+      margin-top: 0.55rem;
+      font-size: 0.78rem;
+      opacity: 0.8;
+    }
+    .checklist li { margin: 0.4rem 0; }
+    .toc a {
+      display: inline-block;
+      margin: 0.2rem 0.35rem 0.2rem 0;
+      padding: 0.25rem 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      text-decoration: none;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .toc a:hover { color: var(--accent); border-color: var(--accent); }
+    .flow {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+      white-space: pre-wrap;
+      background: var(--code);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      color: #d7e0ec;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="badge">Research + product brief · BERT-base @ 512 · LLM ensemble</div>
+    <h1>Student Notes Subject Classifier</h1>
+    <p class="lead">
+      Build a useful student note-taking website that auto-files pasted notes into subjects,
+      while running a real research comparison: prompted LLM vs base BERT vs fine-tuned BERT,
+      with an orchestrator LLM that adjudicates and can invent <code>Other</code> / custom subjects.
+      This plan captures the full design discussion that evolved from the UK headlines
+      DistilBERT domain-adaptation project.
+    </p>
+
+    <nav class="toc" aria-label="Table of contents">
+      <a href="#lineage">Lineage</a>
+      <a href="#product">Product</a>
+      <a href="#research">Research</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#subjects">Subjects</a>
+      <a href="#models">Models</a>
+      <a href="#data">Data</a>
+      <a href="#metrics">Metrics</a>
+      <a href="#stack">Stack</a>
+      <a href="#milestones">Milestones</a>
+    </nav>
+
+    <div class="card">
+      <strong>Folder.</strong>
+      Implement under <code>classifier-research/</code> in this GitHub repo
+      (<code>uk_headlines_practical</code>). Keep the existing UK headlines site/pages intact
+      unless explicitly asked to change them. Do <span class="dont">not</span> commit secrets
+      (<code>api_key.txt</code>, <code>.env</code>, provider keys).
+    </div>
+
+    <h2 id="lineage">0. Lineage — what this builds on</h2>
+    <p>
+      Prior project (this repo): DistilBERT topic classification with domain shift
+      (AG News → UK BBC), Naive Bayes baselines, embedding similarity, novel-words analysis,
+      and a GitHub Pages results site. Key lessons to carry forward:
+    </p>
+    <ul>
+      <li>Frozen held-out test discipline (same test for every system).</li>
+      <li>Report accuracy + macro-F1 + per-class F1, not just a single headline number.</li>
+      <li>Label-schema mismatch can be a scientific lever, not just a footnote
+        (old example: AG <code>World</code> ≠ BBC <code>politics</code>).</li>
+      <li>DistilBERT @ <code>max_length=64</code> felt extremely fast largely because inputs were short;
+        sequence length often dominates model size for latency.</li>
+    </ul>
+    <p class="muted">
+      This new project is <strong>not</strong> another news-topic classifier. It reuses the
+      evaluation mindset and encoder fine-tuning skills, but ships a student product and
+      compares larger / different model classes.
+    </p>
+
+    <h2 id="product">1. Product — useful student note-taking app</h2>
+    <p>
+      <strong>One-line pitch:</strong> student pastes notes → app classifies the subject →
+      notes are saved into a clean per-subject interface on a website.
+    </p>
+
+    <h3>Core user flow</h3>
+    <ol class="pipeline">
+      <li>User pastes (or types) a note into the web app.</li>
+      <li>Three classifiers run in parallel:
+        <strong>LLM classifier</strong>, <strong>base BERT</strong>, <strong>fine-tuned BERT</strong>.</li>
+      <li>An <strong>orchestrator LLM</strong> reads all three outputs (+ confidences / rationales)
+        and decides the final subject — or chooses <code>Other</code>.</li>
+      <li>If <code>Other</code>: orchestrator checks the user’s existing <strong>custom subjects</strong>
+        and assigns one if it fits; otherwise proposes a new custom subject (or a generic Other bucket).</li>
+      <li>Note is saved under that subject in a clean UI (subject folders / pages, searchable list).</li>
+      <li>Backend logs the three model votes vs orchestrator decision for research tracking
+        (extra live data; not the primary paper dataset).</li>
+    </ol>
+
+    <div class="card">
+      <strong>Usefulness shift (kept minimal).</strong>
+      Same classification research core, but framed as a <em>smart note router</em>:
+      classify → file → organize. Optional later: per-subject actions (summarize, flashcards),
+      but v1 is paste → classify → save cleanly.
+    </div>
+
+    <h3>UX requirements (v1)</h3>
+    <ul>
+      <li>Website (desktop + mobile usable).</li>
+      <li>Subject browse: one page/section per subject with saved notes.</li>
+      <li>Show final subject prominently; optionally show the 3 model votes in a
+        “research / details” drawer (do not clutter the primary save flow).</li>
+      <li>User correction control: “Wrong subject?” → move note + log gold label for research.</li>
+      <li>Custom subjects supported via orchestrator <code>Other</code> path.</li>
+    </ul>
+
+    <h2 id="research">2. Research question</h2>
+    <div class="card">
+      <p style="margin:0">
+        <strong>Primary question:</strong>
+        On student-note-like text with a small fixed subject taxonomy, when does a
+        <em>prompted large LLM</em> beat <em>base BERT</em> and <em>fine-tuned BERT-base</em>,
+        and can an <em>orchestrator LLM</em> reliably pick the best vote (or escalate to
+        <code>Other</code> / custom subjects) better than any single system alone?
+      </p>
+    </div>
+    <p>Secondary angles (optional paper subsections):</p>
+    <ul>
+      <li>Proxy-trained BERT (textbooks / exam questions) vs real pasted notes (domain shift).</li>
+      <li>Cost / latency: always-on LLM vs BERT router + LLM only when models disagree or confidence is low.</li>
+      <li>Whether orchestrator over-trusts the LLM vote vs the fine-tuned encoder.</li>
+    </ul>
+
+    <h2 id="pipeline">3. Inference pipeline (locked design)</h2>
+    <pre class="flow">User note
+   │
+   ├─► LLM classifier ─────────────┐
+   ├─► Base BERT classifier ───────┼─► Orchestrator LLM ─► final subject
+   └─► Fine-tuned BERT classifier ─┘         │              (or Other/custom)
+                                              │
+                                              ▼
+                                    save note in UI
+                                    + log research event</pre>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>Role</th>
+          <th>Output</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>LLM classifier</td>
+          <td>Zero-shot / few-shot over the 8 fixed subjects (may also suggest freer wording)</td>
+          <td>label + short rationale + confidence (verbal or calibrated)</td>
+        </tr>
+        <tr>
+          <td>Base BERT</td>
+          <td><code>bert-base-uncased</code> without target fine-tuning (see Models)</td>
+          <td>distribution over 8 subjects</td>
+        </tr>
+        <tr>
+          <td>Fine-tuned BERT</td>
+          <td>Same architecture, trained on the 8-subject proxy corpus</td>
+          <td>distribution over 8 subjects</td>
+        </tr>
+        <tr>
+          <td>Orchestrator LLM</td>
+          <td>Reads all votes; may choose one of the 8, or <code>Other</code> then match user customs</td>
+          <td>final subject + justification</td>
+        </tr>
+        <tr>
+          <td>Backend tracker</td>
+          <td>Stores votes, orchestrator choice, latency, optional user correction</td>
+          <td>research logs (extra data)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      <span class="warn">Important:</span>
+      Offline paper results come from a <strong>frozen proxy test set</strong> prepared in advance.
+      Live user traffic is <strong>extra</strong>, not a substitute for controlled evaluation.
+    </p>
+
+    <h2 id="subjects">4. Predetermined subjects (8)</h2>
+    <p>
+      Psychology and Philosophy were considered and <strong>removed</strong>.
+      <code>Other</code> is <strong>not</strong> a BERT training label; only the orchestrator may assign it
+      (then map onto user custom subjects).
+    </p>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Subject</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><strong>Mathematics</strong></td><td>Core STEM</td></tr>
+        <tr><td>2</td><td><strong>Physics</strong></td><td>Core STEM</td></tr>
+        <tr><td>3</td><td><strong>Chemistry</strong></td><td>Core STEM</td></tr>
+        <tr><td>4</td><td><strong>Biology</strong></td><td>Core STEM / premed</td></tr>
+        <tr><td>5</td><td><strong>Computer Science</strong></td><td>Large student audience</td></tr>
+        <tr><td>6</td><td><strong>History</strong></td><td>Common humanities</td></tr>
+        <tr><td>7</td><td><strong>Literature</strong></td><td>English / essays / novels</td></tr>
+        <tr><td>8</td><td><strong>Economics</strong></td><td>Common social-science track</td></tr>
+      </tbody>
+    </table>
+    <div class="card">
+      <strong>Custom subjects.</strong>
+      Examples: <code>Organic Chem Lab</code>, <code>APUSH</code>, <code>Japanese</code>.
+      Created when orchestrator chooses <code>Other</code> and matches / proposes a user-specific label.
+      Fine-tuned BERT still only emits one of the 8; orchestrator is the escape hatch.
+    </div>
+
+    <h2 id="models">5. Models &amp; size limits</h2>
+    <h3>Encoder choice</h3>
+    <ul>
+      <li><strong>Fine-tuned encoder:</strong> <code>bert-base-uncased</code> (Hugging Face;
+        also available as <code>google-bert/bert-base-uncased</code>),
+        <code>AutoModelForSequenceClassification</code>, <strong>max_length = 512</strong>.</li>
+      <li><strong>Base BERT:</strong> same checkpoint family, <em>not</em> fine-tuned on the target train set.
+        Practical definition for a fair head: either (a) linear probe / head-only on a tiny held-out protocol,
+        or (b) zero-shot style via embeddings + label verbalizers — pick one and document it.
+        Do <span class="dont">not</span> pretend an untrained 8-way head is meaningful without defining the protocol.</li>
+      <li><strong>Not DistilBERT for the main encoder arm</strong> (DistilBERT remains historical context from the prior project).</li>
+    </ul>
+
+    <h3>Token limits (clarified)</h3>
+    <table>
+      <thead>
+        <tr><th>Concept</th><th>Value</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>BERT-base / DistilBERT architecture max</td>
+          <td><strong>512 tokens</strong></td>
+          <td>Hard model limit; longer text is truncated</td>
+        </tr>
+        <tr>
+          <td>Prior UK headlines project setting</td>
+          <td><strong>64 tokens</strong></td>
+          <td>Project choice for short headlines — not a model limit</td>
+        </tr>
+        <tr>
+          <td>This project setting</td>
+          <td><strong>512 tokens</strong></td>
+          <td>Notes / paragraphs / short textbook chunks</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="muted">
+      Rough English length at 512 WordPiece tokens: often ~350–400 words.
+      Attention cost grows roughly with length², so 512-token notes will be slower than
+      the old 64-token headline setup even before switching DistilBERT → BERT-base.
+      Expect BERT-base ≈ 1.5–2× slower than DistilBERT <em>at the same sequence length</em>;
+      raising 64 → 512 usually hurts more than that model swap.
+    </p>
+
+    <h3>LLM arms</h3>
+    <ul>
+      <li><strong>Classifier LLM:</strong> prompted over the 8 subjects (zero-shot + few-shot from train exemplars).</li>
+      <li><strong>Orchestrator LLM:</strong> different prompt/role; inputs = note + three votes (+ optional user custom subject list).</li>
+      <li>Prefer a capable API model for research quality; optionally also benchmark a local open model later.</li>
+    </ul>
+
+    <h2 id="data">6. Data for fine-tuning &amp; offline testing</h2>
+    <p>
+      There is <strong>no large public corpus of real student notes</strong> labeled by subject.
+      Train and freeze-test on <strong>educational proxies</strong> (exam questions, textbook chunks,
+      short academic explanations). Live app notes are domain-shifted extra data — a feature for the paper,
+      not a problem to hide.
+    </p>
+
+    <h3>Target split sizes</h3>
+    <table>
+      <thead>
+        <tr><th>Split</th><th>Per subject</th><th>Total (8 subjects)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Train</td><td>1,500–2,500</td><td>12k–20k</td></tr>
+        <tr><td>Val</td><td>200–300</td><td>1.6k–2.4k</td></tr>
+        <tr><td>Frozen test</td><td>200–300</td><td>1.6k–2.4k</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Stratify, balance classes, truncate/pad to 512, enforce a minimum length filter
+      (e.g. ≥ 20 tokens). Prefer ~50/50 mix of short question-like text and longer textbook prose
+      when available. Hold out a note-like prose slice inside test so results are not only MCQ classification.
+    </p>
+
+    <h3>Sources by subject</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Subject</th>
+          <th>Primary (short / note-like)</th>
+          <th>Secondary (longer prose)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Mathematics</td>
+          <td>
+            <a href="https://huggingface.co/datasets/cais/mmlu">cais/mmlu</a>
+            (<code>elementary_mathematics</code>, <code>high_school_mathematics</code>,
+            <code>college_mathematics</code>, <code>abstract_algebra</code>,
+            <code>high_school_statistics</code> +
+            <a href="https://huggingface.co/datasets/SetFit/student-question-categories">SetFit/student-question-categories</a>
+            (Mathematics)
+          </td>
+          <td>
+            <a href="https://huggingface.co/datasets/princeton-nlp/TextbookChapters">princeton-nlp/TextbookChapters</a>
+            / LibreText math; OpenStax math
+          </td>
+        </tr>
+        <tr>
+          <td>Physics</td>
+          <td>
+            MMLU (<code>high_school_physics</code>, <code>college_physics</code>,
+            <code>conceptual_physics</code>, <code>astronomy</code>) + SetFit (Physics)
+          </td>
+          <td>LibreText / OpenStax physics chapters</td>
+        </tr>
+        <tr>
+          <td>Chemistry</td>
+          <td>
+            MMLU (<code>high_school_chemistry</code>, <code>college_chemistry</code>) + SetFit (Chemistry)
+          </td>
+          <td>LibreText / OpenStax chemistry</td>
+        </tr>
+        <tr>
+          <td>Biology</td>
+          <td>
+            MMLU (<code>high_school_biology</code>, <code>college_biology</code>,
+            <code>anatomy</code>, <code>virology</code>, <code>medical_genetics</code>) + SetFit (Biology)
+          </td>
+          <td>LibreText / OpenStax biology</td>
+        </tr>
+        <tr>
+          <td>Computer Science</td>
+          <td>
+            MMLU (<code>high_school_computer_science</code>, <code>college_computer_science</code>,
+            <code>computer_security</code>, <code>machine_learning</code>) +
+            <a href="https://huggingface.co/datasets/mouryat9/CogBench">mouryat9/CogBench</a>
+            (Computer Science)
+          </td>
+          <td>LibreText CS chapters; optional arXiv <code>cs.*</code> abstracts only</td>
+        </tr>
+        <tr>
+          <td>History</td>
+          <td>
+            MMLU (<code>high_school_us_history</code>, <code>high_school_world_history</code>,
+            <code>high_school_european_history</code>, <code>prehistory</code>) + CogBench (History)
+          </td>
+          <td>
+            <a href="https://huggingface.co/datasets/meliascosta/wiki_academic_subjects">meliascosta/wiki_academic_subjects</a>
+            history-related chunks
+          </td>
+        </tr>
+        <tr>
+          <td>Literature</td>
+          <td>
+            CogBench / OpenStax English-style materials (MMLU is weak here)
+          </td>
+          <td>
+            Literature textbook / Gutenberg excerpts labeled Literature;
+            wiki literature pages
+          </td>
+        </tr>
+        <tr>
+          <td>Economics</td>
+          <td>
+            MMLU (<code>high_school_microeconomics</code>, <code>high_school_macroeconomics</code>,
+            <code>econometrics</code>; optional <code>management</code>, <code>marketing</code>,
+            <code>professional_accounting</code>) + CogBench (Economics, Business)
+          </td>
+          <td>OpenStax Economics</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Easiest v1 data glue</h3>
+    <ol>
+      <li>Map MMLU tasks → 8 subjects.</li>
+      <li>Boost STEM with SetFit student-question-categories.</li>
+      <li>Fill History / Econ / CS / Literature gaps with CogBench + OpenStax/LibreText chunks.</li>
+      <li>Write a single table: <code>id, text, label, split, source</code>.</li>
+      <li>Freeze test IDs forever for the paper.</li>
+    </ol>
+
+    <h3>Explicitly out of BERT training</h3>
+    <ul>
+      <li>Psychology / Philosophy slices (removed subjects) — do not map into the 8.</li>
+      <li><code>Other</code> / custom subjects — orchestrator only.</li>
+      <li>MMLU noise tasks like <code>miscellaneous</code>, <code>global_facts</code> unless carefully justified.</li>
+    </ul>
+
+    <h2 id="metrics">7. Evaluation &amp; research logging</h2>
+    <h3>Offline (paper)</h3>
+    <ul>
+      <li>Same frozen test for: LLM classifier, base BERT, fine-tuned BERT, orchestrator final.</li>
+      <li>Metrics: accuracy, macro-F1, per-class F1, confusion matrices.</li>
+      <li>Also: latency (p50/p95), token/$ cost for LLM arms.</li>
+      <li>Disagreement analysis: when do the three systems diverge, and does the orchestrator help?</li>
+      <li>Optional coverage-risk / deferral curve if confidence thresholding is added.</li>
+    </ul>
+
+    <h3>Online (extra)</h3>
+    <ul>
+      <li>Log anonymized: note hash or truncated text (privacy-aware), 3 votes, orchestrator decision,
+        latencies, user correction if any.</li>
+      <li>Do <span class="dont">not</span> treat online logs as the primary claimed test set
+        unless users provide explicit gold corrections under a clear protocol.</li>
+    </ul>
+
+    <h2 id="stack">8. Suggested technical stack</h2>
+    <div class="grid">
+      <div class="card">
+        <strong>ML</strong>
+        <ul>
+          <li>PyTorch + Hugging Face Transformers</li>
+          <li><code>bert-base-uncased</code>, max_length 512</li>
+          <li>MPS on Mac Studio if available; CUDA otherwise</li>
+          <li><code>datasets</code>, <code>scikit-learn</code>, <code>pandas</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <strong>App</strong>
+        <ul>
+          <li>Web UI (framework flexible: Next.js / FastAPI+HTMX / similar)</li>
+          <li>DB for users, subjects, notes, research events</li>
+          <li>Async jobs for the 3-way classify + orchestrate path</li>
+          <li>Secrets via env vars only</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 id="milestones">9. Implementation milestones</h2>
+    <ol class="setup">
+      <li>
+        <strong>Data prep:</strong> build unified 8-class corpus; write
+        <code>prepare_data.py</code>; freeze splits; document source mapping.
+      </li>
+      <li>
+        <strong>Fine-tune BERT-base @ 512:</strong> train / val early stop; evaluate on frozen test;
+        save checkpoint + metrics JSON.
+      </li>
+      <li>
+        <strong>Base BERT protocol:</strong> implement and document the non-finetuned baseline fairly.
+      </li>
+      <li>
+        <strong>LLM classifier prompts:</strong> zero-shot + few-shot; score on frozen test.
+      </li>
+      <li>
+        <strong>Orchestrator:</strong> prompt that consumes 3 votes + optional custom subjects;
+        score final decisions; measure lift over best single system.
+      </li>
+      <li>
+        <strong>Website v1:</strong> paste note → run pipeline → save into subject UI;
+        wrong-subject correction; research event logging.
+      </li>
+      <li>
+        <strong>Paper artifacts:</strong> results tables, confusion matrices, latency/cost table,
+        qualitative disagreement examples (including Other/custom cases).
+      </li>
+    </ol>
+
+    <h2>10. Agent do / don’t</h2>
+    <ul class="checklist">
+      <li><span class="do">Do</span> keep work under <code>classifier-research/</code>.</li>
+      <li><span class="do">Do</span> preserve a frozen test set and comparable metrics across all systems.</li>
+      <li><span class="do">Do</span> support orchestrator <code>Other</code> → user custom subjects.</li>
+      <li><span class="do">Do</span> treat live user data as extra research signal, not the main benchmark.</li>
+      <li><span class="dont">Don’t</span> train BERT on Psychology / Philosophy / Other as fixed labels.</li>
+      <li><span class="dont">Don’t</span> commit API keys or raw private student notes to git.</li>
+      <li><span class="dont">Don’t</span> break the existing UK headlines GitHub Pages site without being asked.</li>
+    </ul>
+
+    <h2>11. Open choices (decide during implementation, then lock)</h2>
+    <ul>
+      <li>Exact web framework and auth model (local-only vs multi-user).</li>
+      <li>Which LLM provider / model IDs for classifier vs orchestrator.</li>
+      <li>Precise definition of “base BERT” baseline protocol.</li>
+      <li>Whether v1 shows the 3 model votes in the main UI or only in a details panel.</li>
+      <li>Privacy policy for stored note text in research logs (hash vs full text vs user opt-in).</li>
+    </ul>
+
+    <footer>
+      <p>
+        Plan for <code>classifier-research/</code> · evolved from UK headlines DistilBERT practical ·
+        student notes product + LLM/BERT ensemble research.
+      </p>
+      <span class="cite">
+        Predetermined subjects locked to 8 after dropping Psychology and Philosophy.
+        Encoder locked to BERT-base with max length 512.
+      </span>
+    </footer>
+  </main>
+</body>
+</html>
